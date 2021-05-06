@@ -24,7 +24,7 @@ const (
 	OFF
 )
 
-type fileLog struct {
+type FileLog struct {
 	fileName string
 	dirName  string
 	fileTime string
@@ -44,7 +44,7 @@ type fileLog struct {
 	closeChan chan int
 }
 
-func NewFileLog(dirName, fileName string, l LEVEL) *fileLog {
+func NewFileLog(dirName, fileName string, l LEVEL) *FileLog {
 	f, err := newFileLog(dirName, fileName, l)
 	if err != nil {
 		panic(fmt.Sprintf("NewFileLog() err : %s", err))
@@ -53,8 +53,8 @@ func NewFileLog(dirName, fileName string, l LEVEL) *fileLog {
 
 }
 
-func newFileLog(dirName, fileName string, l LEVEL) (*fileLog, error) {
-	fl := &fileLog{
+func newFileLog(dirName, fileName string, l LEVEL) (*FileLog, error) {
+	fl := &FileLog{
 		fileName: fileName,
 		dirName:  dirName,
 		level:    l,
@@ -79,14 +79,14 @@ func newFileLog(dirName, fileName string, l LEVEL) (*fileLog, error) {
 	return fl, err
 }
 
-func (f *fileLog) Start() {
+func (f *FileLog) Start() {
 
 	f.once.Do(func() {
 		go f.logGoroutine()
 	})
 }
 
-func (f *fileLog) logGoroutine() {
+func (f *FileLog) logGoroutine() {
 	T := time.NewTicker(time.Duration(DEFAULT_SQL_TIME) * time.Second)
 	T2 := time.NewTicker(time.Duration(DEFAULT_SCAN_TIME) * time.Second)
 	for {
@@ -106,11 +106,11 @@ func (f *fileLog) logGoroutine() {
 Exit:
 }
 
-func (f *fileLog) l() {
+func (f *FileLog) l() {
 	f.file.WriteString("//===========================================LEN:" + fmt.Sprint(len(f.logChan)))
 }
 
-func (f *fileLog) p(d string) {
+func (f *FileLog) p(d string) {
 	if f.bufCount == f.bufAmount {
 		_, err := f.file.WriteString(f.buf)
 		if err != nil {
@@ -124,7 +124,7 @@ func (f *fileLog) p(d string) {
 
 }
 
-func (f *fileLog) scan() {
+func (f *FileLog) scan() {
 	t := time.Now().Format(DATEFORMAT)
 	if t != f.fileTime {
 		f.file.Close()
