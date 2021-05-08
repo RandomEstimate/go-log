@@ -10,8 +10,9 @@ import (
 const (
 	DATEFORMAT         = "2006-01-02"
 	DEFAULT_BUF_AMOUNT = 10
-	DEFAULT_SQL_TIME   = 300 //s
-	DEFAULT_SCAN_TIME  = 300 //s
+	DEFAULT_SQL_TIME   = 300  //s
+	DEFAULT_SCAN_TIME  = 300  //s
+	DEFAULT_STORE      = 1000 //ms
 )
 
 type LEVEL int
@@ -89,17 +90,24 @@ func (f *FileLog) Start() {
 func (f *FileLog) logGoroutine() {
 	T := time.NewTicker(time.Duration(DEFAULT_SQL_TIME) * time.Second)
 	T2 := time.NewTicker(time.Duration(DEFAULT_SCAN_TIME) * time.Second)
+	T3 := time.NewTimer(time.Duration(DEFAULT_STORE) * time.Millisecond)
 	for {
 		select {
 		case <-T.C:
 			f.l()
 		case d := <-f.logChan:
-			f.p(d)
-			//fmt.Println("log")
+			f.p(d, T3)
 		case <-T2.C:
 			f.scan()
 		case <-f.closeChan:
 			goto Exit
+		case <-T3.C:
+			if f.buf != "" {
+				f.file.WriteString(f.buf)
+			}
+			f.buf = ""
+			f.bufCount = 0
+			T3.Reset(time.Duration(DEFAULT_STORE) * time.Millisecond)
 		}
 
 	}
@@ -110,13 +118,15 @@ func (f *FileLog) l() {
 	f.file.WriteString("//===========================================LEN:" + fmt.Sprint(len(f.logChan)))
 }
 
-func (f *FileLog) p(d string) {
+func (f *FileLog) p(d string, t *time.Timer) {
 	if f.bufCount == f.bufAmount {
 		_, err := f.file.WriteString(f.buf)
 		if err != nil {
 			fmt.Println(err)
 		}
 		f.bufCount = 0
+		f.buf = ""
+		t.Reset(time.Duration(DEFAULT_STORE) * time.Millisecond)
 	} else {
 		f.buf += d + "\n"
 		f.bufCount++
