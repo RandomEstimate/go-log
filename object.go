@@ -115,7 +115,7 @@ Exit:
 }
 
 func (f *FileLog) l() {
-	f.file.WriteString("//===========================================LEN:" + fmt.Sprint(len(f.logChan)))
+	f.file.WriteString("//===========================================LEN:" + fmt.Sprint(len(f.logChan)) + "\n")
 }
 
 func (f *FileLog) p(d string, t *time.Timer) {
